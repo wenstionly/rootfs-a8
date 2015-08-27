@@ -1,0 +1,42 @@
+#! /bin/sh
+
+# mask for S5PV210 - there is no EEPROM for S5PV210 EM Board
+CHECK_VALID_MAC=0
+# Test if the EEPROM already have a MAC
+if [ "$CHECK_VALID_MAC" = "1" ]; then
+	CUR_MAC=$(ifconfig eth0 | sed -n '/HWaddr/ s/^.*HWaddr *//pg')
+	RESULT=$(echo $CUR_MAC | awk -F: '{if ($1 == "FF") print 0; else print 1; }')
+else
+	CUR_MAC=
+	RESULT=0
+fi
+if [ "$RESULT" = "1" ]; then
+    # valid MAC found in the EEPROM
+    # keep the old MAC
+    echo -e "\x1b[1;31m MAC found!\x1b[0m"
+    HR=$(echo $CUR_MAC | awk -F: '{ print $5$6 }')
+else
+    # Invalid MAC
+    echo -e "\x1b[1;31m Invalid MAC, will generate Random MAC for eth0\x1b[0m"
+    # Generate random MAC & network name on first start
+    HR=$(/bin/printf "%04X" $RANDOM)
+    MAC4="$(echo "$HR" | cut -c1-2)"
+    [ -z "$MAC4" ] && MAC4="00"
+    MAC5="$(echo "$HR" | cut -c3-4)"
+    [ -z "$MAC5" ] && MAC5="$MAC4"
+	CUR_MAC=00:53:50:00:$MAC4:$MAC5
+fi
+
+# Generate network config file
+echo "NETWORKING=yes" > /etc/sysconfig/network
+echo "HOSTNAME=SAPP210.$HR" >> /etc/sysconfig/network
+
+# Generate ifcfg-eth0 config file
+echo "auto eth0" > /etc/sysconfig/network-scripts/ifcfg-eth0
+echo "iface eth0 inet dhcp" >> /etc/sysconfig/network-scripts/ifcfg-eth0
+echo "hwaddress ether $CUR_MAC" >> /etc/sysconfig/network-scripts/ifcfg-eth0
+
+for i in /etc/rc.d/rc-1.d/* ; do
+	$i
+done
+/bin/sync

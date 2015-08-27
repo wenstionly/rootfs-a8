@@ -1,0 +1,30 @@
+# Ash profile 
+# vim: syntax=sh
+
+# No core files by default
+ulimit -S -c 0 > /dev/null 2>&1
+
+USER="`id -un`"
+LOGNAME=$USER
+#PS1='[\u@\h \W]\# '
+PS1='\[\e[34;47m\][\u@\h \W]\[\e[0m\]\$ '
+PATH=$PATH
+TERM=xterm
+TERMIFNO=/usr/local/ncurses-arm/share/terminfo
+LANG=zh_CN.UTF-8
+
+alias ll='ls -l'
+alias l.='ls -d .*'
+alias la='ls -d .* -d *'
+alias rm='rm -f'
+
+HOSTNAME=`/bin/hostname`
+
+export USER LOGNAME PS1
+export PATH
+export TERM
+export LANG
+echo -ne "\033[9;0]" > /dev/tty0
+
+[ -f /etc/environment ] && . /etc/environment
+[ -f /usr/local/Trolltech/qte-env ] && . /usr/local/Trolltech/qte-env

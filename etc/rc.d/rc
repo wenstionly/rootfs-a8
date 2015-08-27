@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# rc			This file is for starting/stopping
+#				services.
+
+# First, run the KILL scripts.
+/etc/rc.d/rc.srv.stop
+# Now run the START scripts.
+/etc/rc.d/rc.srv.start
+

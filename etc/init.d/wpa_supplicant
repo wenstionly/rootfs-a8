@@ -1,0 +1,73 @@
+#!/bin/sh
+#
+# Description:  This shell script takes care of starting and stopping dennis
+# Hu Dennis created on Sep. 24th, 2010
+#
+# Source function library
+. /etc/init.d/functions
+
+#the service name  for example: dennis
+SNAME=wpa_supplicant
+
+#the full path and name of the daemon program
+#Warning: The name of executable file must be identical with service name
+PROG=/usr/sbin/$SNAME
+IFNAME=wlan0
+IFCFGDIR=/etc/sysconfig/network-scripts
+
+kill_wpa_cli() {
+    DUMMY=`ps | grep wpa_cli | grep -v grep`
+	[ -n "$DUMMY" ] || return
+	killall wpa_cli 2>/dev/null
+    DUMMY=`ps | grep wpa_cli | grep -v grep`
+    while [ -n "$DUMMY" ]; do
+        usleep 100000
+	    DUMMY=`ps | grep wpa_cli | grep -v grep`
+	done
+}
+# start function
+start() {
+    #check the daemon status first
+	WLANFILE=`cat $IFCFGDIR/def-wlan`
+    [ -n "$WLANFILE" ] && IFNAME=$WLANFILE
+    if [ -f /var/lock/subsys/$SNAME ]; then
+        echo "$SNAME is already started!"
+        exit 0;
+    else
+        action "Starting $SNAME ..." $PROG  -Dwext -i$IFNAME -c/etc/wpa_supplicant.conf -B
+        [ $? -eq 0 ] && touch /var/lock/subsys/$SNAME
+		killproc wpa_cli
+		#kill_wpa_cli
+		wpa_cli -a/etc/network/wpa_action -B
+        exit 0;
+    fi
+}
+
+#stop function
+stop() {
+    echo -n "Stopping $SNAME ..."
+	killproc wpa_cli
+    killproc $SNAME
+	#kill_wpa_cli
+	echo
+    rm -rf /var/lock/subsys/$SNAME
+}
+
+case "$1" in
+start)
+  start
+  ;;
+stop)
+  stop
+  ;;
+reload|restart)
+  stop
+  start
+  ;;
+status)
+  status $SNAME
+  ;;
+*)
+  echo "Usage: $0 {start|stop|restart|status}"
+  exit 1
+esac

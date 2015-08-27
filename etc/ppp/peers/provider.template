@@ -1,0 +1,15 @@
+/dev/ttyUSB3
+115200
+noauth
+nocrtscts
+modem
+connect '/usr/sbin/chat -s -f /etc/ppp/peers/ppp_wcdma'
+disconnect '/usr/sbin/chat -s -f /etc/ppp/peers/close_ppp'
+#debug
+nodetach
+ipcp-accept-local
+ipcp-accept-remote
+usepeerdns
+defaultroute
+noipdefault
+lock

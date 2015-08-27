@@ -1,0 +1,7 @@
+export ALSA_CONFIG_PATH=/usr/local/alsa-arm-a8/share/alsa/alsa.conf
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/alsa-arm-a8/lib
+export PATH=$PATH:/usr/local/alsa-arm-a8/bin:/usr/local/alsa-arm-a8/sbin
+export PATH=$PATH:/usr/local/bluez-arm/bin:/usr/local/bluez-arm/sbin
+export PATH=$PATH:/usr/local/openssh-arm/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/bluez-arm/lib
+

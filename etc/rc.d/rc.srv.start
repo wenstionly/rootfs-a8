@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# rc.srv.start	This file is for starting
+#				services.
+
+. /etc/init.d/functions
+
+# runlevel will never be changed
+runlevel=0
+rcdir=/etc/rc.d/rc$runlevel.d
+
+# Now run the START scripts.
+for i in $rcdir/S* ; do
+    # Check if the subsystem is already up.
+    subsys=${i#*_}
+	subsys=${subsys#*S}
+	[ -f /var/lock/subsys/$subsys -o -f /var/lock/subsys/$subsys.init ] \
+	    && continue
+
+	# Bring the subsystem up.
+	# action "Starting $subsys: " $i start
+	$i start
+done
+

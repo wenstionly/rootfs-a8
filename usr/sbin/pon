@@ -1,0 +1,56 @@
+#!/bin/sh
+
+PPP_ON_BOOT=/etc/ppp/ppp_on_boot
+
+# automatic detect the modem interface
+MODEM_TTY=$(ls /sys/bus/usb-serial/drivers/option1/ | grep tty | awk 'BEGIN{l=0}{l=l+1;if(l==4) print $1;}')
+PROVIDER=${1:-wcdma}
+if [ -z "$MODEM_TTY" ]; then
+	echo "No Modem Found!"
+	exit 1
+else
+	echo "Using $MODEM_TTY as Modem interface"
+	echo "And will connect to $PROVIDER"
+	#awk '{if(match($0,"tty")>0){printf("/dev/%s\n","'$MODEM_TTY'");}else{print $0;}}' /etc/ppp/peers/$PROVIDER.template  > /etc/ppp/peers/$PROVIDER
+	awk '{if(match($0,"tty")>0){printf("/dev/%s\n","'$MODEM_TTY'");}else if(match($0,"ppp_wcdma")>0){gsub("ppp_wcdma","ppp_'$PROVIDER'");print $0;}else{print $0;}}' /etc/ppp/peers/provider.template > /etc/ppp/peers/$PROVIDER
+	[ "$PROVIDER" = "wcdma" ] && mv /etc/ppp/peers/wcdma /etc/ppp/peers/provider
+fi
+
+# detect finish
+
+case "$1" in
+  -*) echo "
+Usage: pon [provider] [arguments]
+
+If pon is invoked without arguments, $PPP_ON_BOOT file will be
+run, presuming it exists and is executable. Otherwise, a PPP connection
+will be started using settings from /etc/ppp/peers/provider.
+If you specify one argument, a PPP connection will be started using
+settings from the appropriate file in the /etc/ppp/peers/ directory, and
+any additional arguments supplied will be passed as extra arguments to
+pppd.
+"
+      exit 0
+      ;;
+esac
+
+if [ -z "$1" -a -x "$PPP_ON_BOOT" ]; then
+  exec "$PPP_ON_BOOT"
+fi
+
+if [ -z "$1" -a ! -f /etc/ppp/peers/provider ]; then
+  echo "
+Please configure /etc/ppp/peers/provider or use a command line argument to
+use another file in /etc/ppp/peers/ directory.
+"
+  exit 1
+fi
+
+if [ "$1" -a ! -f "/etc/ppp/peers/$1" ]; then
+  echo "
+The file /etc/ppp/peers/$1 does not exist.
+"
+  exit 1
+fi
+
+exec /usr/sbin/pppd call ${@:-provider} &

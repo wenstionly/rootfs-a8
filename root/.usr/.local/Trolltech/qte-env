@@ -1,0 +1,27 @@
+# for Qtopia-Core
+export LD_LIBRARY_PATH=/usr/local/Trolltech/QtEmbedded-4.7.0-arm/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/Trolltech/QtEmbedded-4.8.5-arm/lib:$LD_LIBRARY_PATH
+# /dev/mice  for  mouse
+# /dev/event0 for 2*3 keyboard mouse
+# /dev/event1 for touchscreen
+# /dev/event2 for mouse
+# /dev/event3 for keyboard
+#export QWS_MOUSE_PROTO="MouseMan:/dev/mice"
+export QWS_MOUSE_PROTO='intelliMouse:/dev/input/mouse1 tslib:/dev/input/event1'
+#export QWS_MOUSE_PROTO='tslib:/dev/input/event1'
+export QWS_KEYBOARD=TTY:/dev/tty0
+#export QWS_DISPLAY=transformed:::rot90:0
+export QWS_DISPLAY=transformed
+
+# for tslib
+export T_ROOT=/usr/local/tslib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$T_ROOT/lib
+export TSLIB_CONSOLEDEVICE=none
+export TSLIB_FBDEVICE=/dev/fb0
+export TSLIB_TSDEVICE=/dev/input/event1
+export TSLIB_CALIBFILE=$T_ROOT/etc/pointercal
+export TSLIB_CONFFILE=$T_ROOT/etc/ts.conf
+export TSLIB_PLUGINDIR=$T_ROOT/plugins
+export TSLIB_TSEVENTTYPE=H3600
+export POINTERCAL_FILE=$TSLIB_CALIBFILE
+

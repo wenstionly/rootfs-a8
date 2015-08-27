@@ -1,0 +1,5 @@
+[General]
+Name=无线网络管理
+Icon=/root/.StartMenu/.icons/wireless.png
+Path=wpa_gui
+Dir=

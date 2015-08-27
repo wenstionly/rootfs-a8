@@ -1,0 +1,33 @@
+#!/bin/sh
+
+RESTART_NETWORK=0
+while [ 1 ]; do
+	WPA_RUNNING=`[ -e /var/run/wpa_supplicant ] && echo 1`
+	WLAN0_EXISTS=`[ -e /sys/class/net/wlan0 ] && echo 1`
+
+	if [ "$WLAN0_EXISTS" = "1" ]; then
+		if [ -z "$WPA_RUNNING" ]; then
+			echo "Wlan0 is exists but wpa_supplicant is not runnig"
+			service wpa_supplicant restart
+			RESTART_NETWORK=1
+		fi
+	else
+		RESTART_NETWORK=0
+		if [ -n "$WPA_RUNNING" ]; then
+			echo "Wlan0 is gone! but wpa_supplicant is still running"
+			service wpa_supplicant stop
+		fi
+	fi
+	if [ $RESTART_NETWORK -eq 1 ]; then
+		STATUS=`wpa_cli status | grep wpa_state | awk -F= '{print $2;}'`
+		if [ "$STATUS" = "COMPLETED" ]; then
+			echo "Reset the IP address of the wlan0"
+#			ifdown -i /etc/sysconfig/network-scripts/ifcfg-wlan0 wlan0 boot
+#			ifup -i /etc/sysconfig/network-scripts/ifcfg-wlan0 -f wlan0 boot
+			service network restart
+			RESTART_NETWORK=0
+		fi
+	fi
+	sleep 1
+done
+

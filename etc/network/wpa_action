@@ -1,0 +1,10 @@
+#!/bin/sh
+[ $# -ne 2 ] && exit 0
+
+IFCFGDIR=/etc/sysconfig/network-scripts
+if [ "$2" = "CONNECTED" ]; then
+    [ -f $IFCFGDIR/ifcfg-$1 ] && /sbin/ifup -i $IFCFGDIR/ifcfg-$1 -f $1 boot
+fi
+if [ "$2" = "DISCONNECTED" ]; then
+    #[ -f $IFCFGDIR/ifcfg-$1 ] && /sbin/ifdown -i $IFCFGDIR/ifcfg-$1 $1 boot
+fi

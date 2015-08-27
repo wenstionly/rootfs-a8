@@ -1,0 +1,177 @@
+#! /bin/sh
+
+if ! /bin/busybox [ -r /dev/console ]; then
+    mknod /dev/console c 5 1
+    echo -ne "\x1b[1;31m[NOTICE]System install OK, but you should reboot before using it.\x1b[0m\n"
+#    reboot
+fi
+
+if ! /bin/busybox [ -d /lib/modules ]; then
+    mkdir /lib/modules
+fi
+if ! /bin/busybox [ -d "/lib/modules/$(uname -r)" ]; then
+    mkdir "/lib/modules/$(uname -r)"
+fi
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin:
+runlevel=S
+prevlevel=N
+umask 022
+export PATH runlevel prevlevel
+
+chmod 4755 /bin/busybox
+
+#
+#	Trap CTRL-C &c only in this shell so we can interrupt subprocesses.
+#
+trap ":" INT QUIT TSTP
+# /bin/hostname SunplusAPP
+
+# /sbin/hwclock -s
+
+#SCSI modules
+
+#Input modules
+
+#Charactor modules
+
+/bin/mount -t proc none /proc
+/bin/mount -t tmpfs none /tmp
+/bin/mount -t tmpfs none /var
+/bin/mount -n -t sysfs none /sys
+/bin/mount -t ramfs none /dev
+mkdir -p /dev/pts
+mkdir -p /dev/shm
+/bin/mount -n -t devpts none /dev/pts -o mode=0622
+/bin/mount -n -t tmpfs tmpfs /dev/shm
+
+# mk some usefull folders
+mkdir /var/log
+mkdir /var/run
+mkdir /var/lock
+mkdir /var/lock/subsys
+mkdir /var/lib
+ln -s /root/.dpkg /var/lib/dpkg
+
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+/sbin/mdev -s
+
+BUSYBOX_120="FALSE"
+if /bin/busybox | /bin/grep '1.20'; then
+	BUSYBOX_120="TRUE";
+fi
+# for alsa-lib
+if [ "$BUSYBOX_120" = "TRUE" ]; then
+	/bin/mkdir -p /dev/snd
+	/bin/ln -s /dev/controlC0 /dev/snd/controlC0
+	/bin/ln -s /dev/pcmC0D1c /dev/snd/pcmC0D0c
+	/bin/ln -s /dev/pcmC0D1c /dev/snd/pcmC0D1c
+	/bin/ln -s /dev/pcmC0D0p /dev/snd/pcmC0D0p
+	#/bin/ln -s /dev/pcmC1D0c /dev/snd/pcmC1D0c
+	#/bin/ln -s /dev/pcmC1D0p /dev/snd/pcmC1D0p
+	#/bin/ln -s /dev/controlC1 /dev/snd/controlC1
+	#/bin/ln -s /dev/seq /dev/snd/seq
+	/bin/ln -s /dev/timer /dev/snd/timer
+else
+	/bin/ln -s /dev/snd/controlC0 /dev/controlC0
+	/bin/ln -s /dev/snd/pcmC0D1c /dev/pcmC0D0c
+	/bin/ln -s /dev/snd/pcmC0D1c /dev/pcmC0D1c
+	/bin/ln -s /dev/snd/pcmC0D0p /dev/pcmC0D0p
+	/bin/ln -s /dev/snd/timer /dev/timer
+fi
+# mount the data & cache partition
+# remount the /root and the /Application if root is on a flash.
+rootfs=$(awk '{ if ($1 !~ /^[ \t]*#/ && $2 == "/") { print $3; }}' /etc/mtab)
+if [ "${rootfs/yaffs/}" != "$rootfs" ]; then
+#if [ "$rootfs" = "^yaffs" ] ; then
+    /bin/mount /dev/mtdblock6 /root
+    /bin/mount /dev/mtdblock5 /Application
+fi
+
+chmod a+wr /dev/null
+chmod a+wr /dev/tty0
+
+# load driver modules
+. /etc/init.d/functions
+for i in /lib/modules/$(uname -r)/*.ko; do
+    drv_name=${i#/lib/modules/$(uname -r)/}
+	[ ! $drv_name = "*.ko" ] && action "Loading $drv_name: " /sbin/insmod $i
+    # action "Loading $drv_name: " /sbin/insmod $i
+done
+
+# Generate random MAC & network name on first start
+if [ -f /etc/rc.d/rc.sysonce ]; then
+    /etc/rc.d/rc.sysonce
+    mv /etc/rc.d/rc.sysonce /etc/rc.d/.rc.sysonce
+fi
+
+# support for FTS
+FTS_DEVICE=""
+for i in /sys/class/input/event* ; do
+    FTS=$(cat $i/device/name | grep "ft5x0x_ts")
+    if [ $? == 0 ]; then
+        FTS_DEVICE=${i#/sys/class/input/}
+    fi
+done
+
+IS_FTS_MODE=$(awk -F= '{if($1=="export QWS_MOUSE_PROTO") { if($2~/event2/) printf("FTS\n"); }}' /usr/local/Trolltech/qte-env)
+FORCE_RM_CALBFILE=""
+
+if [ -n "$FTS_DEVICE" ]; then
+    # change the QWS_MOUSE_PROTO setting
+    if [ -z "$IS_FTS_MODE" ]; then
+        awk -F= '{if($1=="export QWS_MOUSE_PROTO"){printf("export QWS_MOUSE_PROTO='\''intelliMouse:/dev/input/mouse1 tslib:/dev/input/event2'\''\n");}else if($1=="export TSLIB_TSDEVICE"){printf("export TSLIB_TSDEVICE=/dev/input/event2\n");}else{print $0;}}' /usr/local/Trolltech/qte-env > /usr/local/Trolltech/qte-env.new
+        mv /usr/local/Trolltech/qte-env /usr/local/Trolltech/qte-env.old
+        mv /usr/local/Trolltech/qte-env.new /usr/local/Trolltech/qte-env
+
+        # Set the tslib calibrate param
+        #echo "1 0 0 0 1 0 1" > /usr/local/tslib/etc/pointercal
+        FORCE_RM_CALBFILE="TRUE"
+    fi
+else
+    # no FTS, use the default S5P TouchScreen
+    if [ -n "$IS_FTS_MODE" ]; then
+        awk -F= '{if($1=="export QWS_MOUSE_PROTO"){printf("export QWS_MOUSE_PROTO='\''intelliMouse:/dev/input/mouse1 tslib:/dev/input/event1'\''\n");}else if($1=="export TSLIB_TSDEVICE"){printf("export TSLIB_TSDEVICE=/dev/input/event1\n");}else{print $0;}}' /usr/local/Trolltech/qte-env > /usr/local/Trolltech/qte-env.new
+        mv /usr/local/Trolltech/qte-env /usr/local/Trolltech/qte-env.old
+        mv /usr/local/Trolltech/qte-env.new /usr/local/Trolltech/qte-env
+
+        FORCE_RM_CALBFILE="TRUE"
+    fi
+
+fi
+
+# Load Environment
+[ -f /etc/environment ] && . /etc/environment
+[ -f /usr/local/Trolltech/qte-env ] && . /usr/local/Trolltech/qte-env
+
+[ -n "$FORCE_RM_CALBFILE" ] && rm -rf $TSLIB_CALIBFILE
+
+#  Check tslib calibrate file
+if [ ! -f $TSLIB_CALIBFILE ]; then
+    # Start ts_calibrate in background
+    echo "Starting TouchScreen calibration, please finish it within 60 seconds!"
+    /usr/local/tslib/bin/ts_calibrate &
+    # Check the ts_calibrate process and wait for about 60s
+    COUNT=1200
+    L=$(ps | grep ts_calibrate | grep -v grep)
+    while [ $? == 0 -a $COUNT -gt 0 ]; do
+        /bin/usleep 10000
+        let COUNT=$COUNT-1
+        L=$(ps | grep ts_calibrate | grep -v grep)
+    done
+    ps | grep ts_calibrate | grep -v grep
+    if [ $? == 0 ]; then
+        echo "Calibrate timeout! killing ts_calibrate..."
+        killall ts_calibrate 2>/dev/null
+        # create a default pointercal
+        #echo "1 0 0 0 1 0 1" > $TSLIB_CALIBFILE
+		rm -rf $TSLIB_CALIBFILE
+	#else
+	#	[ -e $TSLIB_CALIBFILE ] && chmod 0777 $TSLIB_CALIBFILE
+    fi
+fi
+
+# start system service
+[ -f /etc/rc.d/rc ] && /etc/rc.d/rc
+
+/bin/sync

@@ -1,0 +1,5 @@
+[General]
+Name=终端
+Icon=/root/.StartMenu/.icons/console.png
+Path=qconsole
+Dir=

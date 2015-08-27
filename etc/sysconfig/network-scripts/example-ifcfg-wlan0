@@ -1,0 +1,5 @@
+# Generate by IPSetting Tool at 1970-01-01 18:34:07
+
+auto wlan0
+iface wlan0 inet dhcp
+pre-up /etc/network/wep_config wlan0 "nobodycanjoin" "s:while"

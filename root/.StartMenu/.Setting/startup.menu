@@ -1,0 +1,5 @@
+[General]
+Name=自启动程序管理
+Icon=/root/.StartMenu/.icons/program.png
+Path=/sbin/system-config-startup
+Dir=

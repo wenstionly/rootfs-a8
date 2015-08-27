@@ -1,0 +1,5 @@
+[General]
+Name=系统服务管理
+Icon=/root/.StartMenu/.icons/program.png
+Path=/sbin/system-config-services
+Dir=

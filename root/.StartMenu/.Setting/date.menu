@@ -1,0 +1,6 @@
+[General]
+Name=日期时间设置
+Icon=/root/.StartMenu/.icons/date.png
+Path=sys_man_date
+Dir=
+Inner=1

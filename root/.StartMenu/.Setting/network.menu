@@ -1,0 +1,5 @@
+[General]
+Name=以太网设置
+Icon=/root/.StartMenu/.icons/network_adapter.png
+Path=/usr/sbin/ipconfig
+Dir=

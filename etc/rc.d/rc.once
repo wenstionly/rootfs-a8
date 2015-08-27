@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# Check enviroment script
+[ -f /etc/environment ] && . /etc/environment
+[ -f /usr/local/Trolltech/qte-env ] && . /usr/local/Trolltech/qte-env
+
+# Start Applications.
+app_list=$(ls /etc/rc.d/rcA.d)
+for i in $app_list ; do
+	/etc/rc.d/rcA.d/$i
+done
+
+/bin/sync

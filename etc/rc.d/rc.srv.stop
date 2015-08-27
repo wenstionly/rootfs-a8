@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# rc			This file is for starting/stopping
+#				services.
+
+. /etc/init.d/functions
+
+# runlevel will never be changed
+runlevel=0
+
+# First, run the KILL scripts.
+for i in /etc/rc.d/rc$runlevel.d/K* ; do
+    # Check if the subsystem is already up.
+    subsys=${i#*_}
+	subsys=${subsys#*K}
+	[ -f /var/lock/subsys/$subsys -o -f /var/lock/subsys/$subsys.init ] \
+	    || continue
+
+	# Bring the subsystem down.
+	# action "Stopping $subsys: " $i stop
+	$i stop
+done
+

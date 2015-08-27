@@ -1,0 +1,9 @@
+::sysinit:/etc/rc.d/rc.sysinit
+::once:/etc/rc.d/rc.once
+tty2::respawn:/sbin/getty 38400 tty2
+tty3::respawn:/sbin/getty 38400 tty3
+s3c2410_serial0::respawn:/sbin/getty -L s3c2410_serial0 115200 vt100
+::shutdown:/etc/rc.d/rc.srv.stop
+::shutdown:/bin/sync
+::shutdown:/bin/umount -a -r
+

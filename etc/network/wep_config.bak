@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# wait for wlan ready
+echo "Waiting for $1 ready..."
+COUNT=100
+RES=$(/usr/sbin/iwconfig 2>/dev/null | grep "$1")
+while [ -z "$RES" -a $COUNT -gt 0 ]; do
+    /bin/usleep 10000
+    let COUNT=$COUNT-1
+	RES=$(/usr/sbin/iwconfig 2>/dev/null | grep "$1")
+done
+echo -ne "$1 detected, bring it up to work..."
+if ! /sbin/ifconfig $1 up 2>/dev/null; then
+    echo -ne "$1 not ready!"
+    exit 1
+fi
+if [ -n "$3" ]; then
+    if ! /usr/sbin/iwconfig $1 key $3 2>/dev/null; then
+        echo -ne "$1 can't set Encryption key!"
+        exit 1
+    fi
+    /usr/sbin/iwconfig $1 key open 2>/dev/null
+	# check if the driver do not support key open option
+	if [ -n "$(iwconfig wlan0 | grep "Encryption key:off")" ]; then
+	    /usr/sbin/iwconfig $1 key $3 2>/dev/null
+	fi
+else
+    if ! /usr/sbin/iwconfig $1 key off 2>/dev/null; then
+        echo -ne "$1 can't set Encryption key!"
+        exit 1
+    fi
+fi
+if ! /usr/sbin/iwconfig $1 essid $2 2>/dev/null; then
+    exit 1
+fi
+#/usr/sbin/iwconfig $1 ap auto
+echo "Wait for $1 Connect to the $2..."
+TIMEOUT=30000
+#/usr/sbin/iwconfig $1 2>/dev/null | grep "$2"
+RES=$(/usr/sbin/iwconfig $1 2>/dev/null | grep "Access Point: Not-Associated")
+while [ -n "$RES" -a $TIMEOUT -gt 0 ]; do
+    /bin/usleep 10000
+    let TIMEOUT=$TIMEOUT-1
+    #/usr/sbin/iwconfig $1 2>/dev/null | grep "$2"
+	RES=$(/usr/sbin/iwconfig $1 2>/dev/null | grep "Access Point: Not-Associated")
+done
+if [ $? == 0 ]; then
+	echo "Can't connect to $2, try ap auto..."
+	/usr/sbin/iwconfig $1 ap auto
+	echo "Now wait for $1 Connect to the $2 again..."
+	RES=$(/usr/sbin/iwconfig $1 2>/dev/null | grep "Access Point: Not-Associated")
+	while [ -n "$RES" -a $TIMEOUT -gt 0 ]; do
+	    /bin/usleep 10000
+	    let TIMEOUT=$TIMEOUT-1
+	    #/usr/sbin/iwconfig $1 2>/dev/null | grep "$2"
+		RES=$(/usr/sbin/iwconfig $1 2>/dev/null | grep "Access Point: Not-Associated")
+	done
+	if [ $? == 0 ]; then
+		echo "Can't connect to $2, give up..."
+	fi
+fi

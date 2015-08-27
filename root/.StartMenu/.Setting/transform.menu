@@ -1,0 +1,5 @@
+[General]
+Name=屏幕旋转
+Icon=/root/.StartMenu/.icons/transform.png
+Path=transform
+Dir=
